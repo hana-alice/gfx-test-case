@@ -9,7 +9,7 @@
 #include "tests/ClearScreenTest.h"
 #include "tests/ComputeTest.h"
 #include "tests/DepthTest.h"
-#include "tests/FrameGraphTest.h"
+//#include "tests/FrameGraphTest.h"
 #include "tests/ParticleTest.h"
 #include "tests/StencilTest.h"
 #include "tests/StressTest.h"

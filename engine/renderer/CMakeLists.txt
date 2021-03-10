@@ -1,6 +1,6 @@
 add_subdirectory(gfx-base)
 add_subdirectory(gfx-agent)
-add_subdirectory(frame-graph)
+# add_subdirectory(frame-graph)
 
 add_subdirectory(gfx-gles-common)
 add_subdirectory(gfx-gles2)

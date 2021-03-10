@@ -113,7 +113,7 @@ target_link_libraries(${APP_NAME}
     Core
     GFXBase
     GFXAgent
-    FrameGraph
+    # FrameGraph
     ${GFX_LIB}
     ${CC_EXTERNAL_LIBS}
     z

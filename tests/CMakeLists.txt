@@ -11,7 +11,7 @@ set(GFX_TESTCASE_HEADER
     ${COCOS_ROOT_PATH}/tests/BunnyTest.h
     ${COCOS_ROOT_PATH}/tests/StressTest.h
     ${COCOS_ROOT_PATH}/tests/ComputeTest.h
-    ${COCOS_ROOT_PATH}/tests/FrameGraphTest.h
+    # ${COCOS_ROOT_PATH}/tests/FrameGraphTest.h
 )
 
 set(GFX_TESTCASE_SOURCE
@@ -26,5 +26,5 @@ set(GFX_TESTCASE_SOURCE
     ${COCOS_ROOT_PATH}/tests/BunnyTest.cc
     ${COCOS_ROOT_PATH}/tests/StressTest.cc
     ${COCOS_ROOT_PATH}/tests/ComputeTest.cc
-    ${COCOS_ROOT_PATH}/tests/FrameGraphTest.cc
+    # ${COCOS_ROOT_PATH}/tests/FrameGraphTest.cc
 )

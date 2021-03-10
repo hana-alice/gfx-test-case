@@ -82,7 +82,7 @@ target_link_libraries(${APP_NAME}
     Core
     GFXBase
     GFXAgent
-    FrameGraph
+    # FrameGraph
     GFXGLESCommon
     GFXGLES2
     GFXGLES3
