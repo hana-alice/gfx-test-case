@@ -113,7 +113,7 @@ namespace
 #else
     windowHandle = layer;
 #endif
-    cc::TestBaseI::resizeGlobal(windowHandle, nativeSize.width, nativeSize.height, gfx::SurfaceTransform::IDENTITY);
+    cc::TestBaseI::resizeGlobal(windowHandle, nativeSize.width, nativeSize.height, cc::gfx::SurfaceTransform::IDENTITY);
 }
 
 - (void)viewDidChangeBackingProperties {

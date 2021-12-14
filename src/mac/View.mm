@@ -34,6 +34,14 @@
 #import <AppKit/NSEvent.h>
 #import <QuartzCore/QuartzCore.h>
 #import <AppKit/NSWindow.h>
+#import <ctime>
+#import "../../../engine-native/cocos/renderer/gfx-base/GFXSwapchain.h"
+#import "../../../engine-native/cocos/renderer/gfx-base/GFXDevice.h"
+#import "../../../engine-native/cocos/renderer/gfx-base/GFXFramebuffer.h"
+#import "../../../engine-native/cocos/renderer/gfx-base/GFXRenderPass.h"
+#import "../../../engine-native/cocos/renderer/GFXDeviceManager.h"
+
+using namespace cc::gfx;
 
 namespace
 {
@@ -41,8 +49,14 @@ namespace
 }
 
 @implementation View {
-
+    IOSurfaceRef _surface;
+    Swapchain* _swapchain;
+    Device* _ccdevice;
+    Framebuffer* _frameBuffer;
+    RenderPass* _renderPass;
+    Texture* _targetTex;
 }
+
 
 - (CALayer *)makeBackingLayer
 {
@@ -91,6 +105,60 @@ namespace
 
         cc::TestBaseI::setWindowInfo(g_windowInfo);
         cc::TestBaseI::nextTest();
+        
+        NSDictionary* dict = [NSDictionary dictionaryWithObjectsAndKeys:
+                                 [NSNumber numberWithInt:size.width], kIOSurfaceWidth,
+                                 [NSNumber numberWithInt:size.height], kIOSurfaceHeight,
+                                 [NSNumber numberWithInt:4], kIOSurfaceBytesPerElement,
+                                 nil];
+
+        _surface = IOSurfaceCreate((CFDictionaryRef)dict);
+        
+        DeviceInfo deviceInfo;
+        _ccdevice = DeviceManager::create(deviceInfo);
+        
+        _ccdevice = Device::getInstance();
+        
+        SwapchainInfo swapchainInfo = {
+            .width = (uint32_t)size.width,
+            .height = (uint32_t)size.height,
+            .vsyncMode = VsyncMode::RELAXED,
+            .windowHandle = self,
+        };
+        _swapchain = _ccdevice->createSwapchain(swapchainInfo);
+        
+        ColorAttachment color = {
+            .format = Format::BGRA8,
+            .loadOp = LoadOp::CLEAR,
+            .storeOp = StoreOp::STORE,
+        };
+        
+        RenderPassInfo rpInfo = {
+            .dependencies = {},
+            .subpasses = {},
+            .colorAttachments = {color},
+        };
+        
+        _renderPass = _ccdevice->createRenderPass(rpInfo);
+        
+        TextureInfo texInfo = {
+            .type = TextureType::TEX2D,
+            .usage = TextureUsage::COLOR_ATTACHMENT | TextureUsage::SAMPLED,
+            .format = Format::BGRA8,
+            .width = (uint32_t)size.width,
+            .height = (uint32_t)size.height,
+            .externalRes = _surface,
+        };
+        
+        _targetTex = _ccdevice->createTexture(texInfo);
+        
+        FramebufferInfo fbInfo = {
+            .renderPass = _renderPass,
+            .colorTextures = {_targetTex},
+        };
+
+        _frameBuffer = _ccdevice->createFramebuffer(fbInfo);
+        
     }
     return self;
 }
@@ -117,7 +185,7 @@ namespace
 #else
     windowHandle = layer;
 #endif
-    cc::TestBaseI::resizeGlobal(windowHandle, nativeSize.width, nativeSize.height, gfx::SurfaceTransform::IDENTITY);
+    cc::TestBaseI::resizeGlobal(windowHandle, nativeSize.width, nativeSize.height, cc::gfx::SurfaceTransform::IDENTITY);
 }
 
 - (void)viewDidChangeBackingProperties {
@@ -133,7 +201,64 @@ namespace
 }
 
 - (void)tick {
-    cc::TestBaseI::update();
+//    IOSurfaceLock(_surface, 0, NULL);
+    Swapchain* scs[1];
+    scs[0] = _swapchain;
+    _ccdevice->acquire(scs, 1);
+    
+    Color clearColor;
+    clearColor.x = 1.0F;
+    clearColor.y = std::abs(std::sin(std::time(nullptr)));
+    clearColor.z = 0.0F;
+    clearColor.w = 1.0F;
+
+    cc::gfx::Rect renderArea = {0, 0, _swapchain->getWidth(), _swapchain->getHeight()};
+
+    auto *commandBuffer = _ccdevice->getCommandBuffer();
+    commandBuffer->begin();
+    commandBuffer->beginRenderPass(_frameBuffer->getRenderPass(), _frameBuffer, renderArea, &clearColor, 1.0F, 0);
+    commandBuffer->endRenderPass();
+    
+    Extent srcExtent = {
+        .width = _swapchain->getWidth(),
+        .height = _swapchain->getHeight(),
+        .depth = 1,
+    };
+    
+    Offset srcOffset = {0, 0, 0};
+    
+    TextureSubresLayers layers = {
+        .baseArrayLayer = 0,
+        .layerCount = 1,
+        .mipLevel = 0,
+    };
+    
+    TextureBlit blitRegion = {
+        .srcExtent = srcExtent,
+        .dstExtent = srcExtent,
+        .srcOffset = srcOffset,
+        .dstOffset = srcOffset,
+        .srcSubres = layers,
+        .dstSubres = layers,
+    };
+    
+    commandBuffer->blitTexture(_targetTex, _swapchain->getColorTexture(), {blitRegion}, Filter::LINEAR);
+    commandBuffer->end();
+
+    _ccdevice->flushCommands({commandBuffer});
+    _ccdevice->getQueue()->submit({commandBuffer});
+    
+    _ccdevice->present();
+    
+//    void* data = IOSurfaceGetBaseAddress(_surface);
+//    size_t stride = IOSurfaceGetBytesPerRow(_surface);
+//
+//    CGColorSpaceRef rgb = CGColorSpaceCreateDeviceRGB();
+//    CGContextRef imgCtx = CGBitmapContextCreate(data, size.width, size.height, 8, stride,
+//                                                rgb, kCGImageAlphaPremultipliedFirst | kCGBitmapByteOrder32Host);
+//    CGColorSpaceRelease(rgb);
+//
+//    cc::TestBaseI::update();
 }
 
 - (void)mouseUp:(NSEvent *)event {
